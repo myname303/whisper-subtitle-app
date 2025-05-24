@@ -36,5 +36,5 @@ This project allows users to upload `.mp3` files **or enter a YouTube video URL*
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/your-username/whisper-subtitle-app.git
+git clone https://github.com/myname303/whisper-subtitle-app.git
 cd whisper-subtitle-app
