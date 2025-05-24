@@ -1,0 +1,23 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+# OS-specific
+.DS_Store
+
+# Environment variables
+.env
+
+# Docker artifacts
+*.log
+*.pid
+*.sqlite3
+
+# IDE
+.idea/
