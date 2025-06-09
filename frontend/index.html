@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎯 더 정확한 자막 추출기</title>
+  <style>
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    max-width: 720px;
+    margin: auto;
+    padding: 30px;
+    background: #EAEFEF; /* 아주 밝은 회색 */
+    color: #333446; /* 딥 그레이블루 */
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 28px;
+    color: #333446; /* 헤더 컬러 */
+  }
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .tabs button {
+    padding: 10px 16px;
+    border: none;
+    background: #B8CFCE; /* 약간 채도 낮춘 블루그린 */
+    color: #333446;
+    cursor: pointer;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: background 0.3s;
+  }
+  .tabs button:hover {
+    background: #7F8CAA; /* 진한 블루그레이 */
+  }
+  .tab { display: none; }
+  .tab.active { display: block; }
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  input[type="text"] {
+    width: 100%;
+    padding: 12px 3px;
+    border-radius: 6px;
+    border: 1px solid #7F8CAA;
+    font-size: 13px;
+    background-color: #EAEFEF;
+    color: #333446;
+  }
+  .row {
+    display: flex;
+    gap: 10px;
+  }
+  select, button {
+    padding: 12px 3px;
+    font-size: 13px;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+    flex: 1;
+  }
+  select {
+    border: 1px solid #7F8CAA;
+    background-color: #EAEFEF;
+    color: #333446;
+  }
+  #yt-button {
+    background-color: #333446;
+    color: #EAEFEF;
+  }
+  #yt-button:hover {
+    background-color: #7F8CAA;
+    color: #fff;
+  }
+  #file-button {
+    background-color: #333446;
+    color: #EAEFEF;
+  }
+  #file-button:hover {
+    background-color: #7F8CAA;
+    color: #fff;
+  }
+  #cancel-button {
+    background-color: #B8CFCE;
+    color: #333446;
+  }
+  #cancel-button:hover {
+    background-color: #7F8CAA;
+    color: #fff;
+  }
+  button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  #loader {
+    margin-top: 15px;
+    text-align: center;
+  }
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border: 4px solid #ccc;
+    border-top-color: #333446;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 10px auto;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  textarea {
+    width: 100%;
+    height: 300px;
+    margin-top: 20px;
+    padding: 12px 3px;
+    font-family: monospace;
+    border-radius: 6px;
+    border: 1px solid #7F8CAA;
+    background: #EAEFEF;
+    color: #333446;
+    resize: vertical;
+    white-space: pre-wrap;
+    font-size: 14px;
+  }
+  .output-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .output-controls button, .output-controls select {
+    flex: 1;
+    padding: 12px;
+    font-size: 13px;
+    border-radius: 6px;
+    border: none;
+    font-weight: bold;
+    background-color: #333446;
+    color: #EAEFEF;
+    transition: background 0.3s;
+  }
+  .output-controls button:hover {
+    background-color: #7F8CAA;
+  }
+  #format {
+    background-color: #B8CFCE;
+    color: #333446;
+  }
+  .status-message {
+    margin-top: 10px;
+    font-size: 16px;
+    color: #333446;
+    text-align: center;
+  }
+  .tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    margin-left: 5px;
+  }
+  .tooltip .tooltiptext {
+    visibility: hidden;
+    width: 220px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    top: 150%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+  <h1>🎯 더 정확한 자막 추출기</h1>
+
+  <div class="tabs">
+    <button onclick="showTab('youtube')">🎬 YouTube 자막 추출</button>
+    <button onclick="showTab('file')">📁 파일 업로드</button>
+  </div>
+
+  <div id="youtube" class="tab active">
+    <div class="controls">
+      <input type="text" id="yt-url" placeholder="https://www.youtube.com/watch?v=... 또는 shorts/..." />
+      <div class="row">
+        <select id="lang">
+          <option value="ko" selected>🇰🇷 한글 자막</option>
+          <option value="en">🇺🇸 영어 자막</option>
+        </select>
+        <select id="quality">
+          <option value="low" selected>🟢 저품질 (빠름)</option>
+          <option value="medium">⚖️ 중간 품질</option>
+          <option value="high">🔵 고품질 (느림)</option>
+        </select>
+        <button id="yt-button" onclick="extractYouTube()">🔍 자막 추출</button>
+        <button id="cancel-button" onclick="cancelRequest()">❌ 취소</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="file" class="tab">
+    <input type="file" id="audio-file" accept="audio/*"/>
+    <button id="file-button" onclick="extractFile()">🔊 자막 추출</button>
+  </div>
+
+  <div id="status" class="status-message"></div>
+
+  <div id="loader" style="display:none;">
+    <div class="spinner"></div>
+  </div>
+
+  <textarea id="output" readonly placeholder="여기에 자막이 표시됩니다..."></textarea>
+
+  <div class="output-controls">
+    <button onclick="copyText()">📋 복사</button>
+    <button onclick="downloadText()">💾 텍스트 다운로드<span class="tooltip">ⓘ<span class="tooltiptext">현재 화면에 보이는 텍스트를 저장합니다. 생략된 부분은 제외됩니다.</span></span></button>
+     <!-- <select id="format">
+      <option value="txt">.txt</option>
+      <option value="vtt">.vtt</option>
+      <option value="srt">.srt</option>
+    </select>
+  <button onclick="downloadFromServer()">🌐 서버 다운로드<span class="tooltip">ⓘ<span class="tooltiptext">서버에서 전체 자막 파일을 저장합니다. 생략 없이 모두 저장됩니다.</span></span></button>
+  --></div>
+
+  <script>
+    let fullText = "";
+    let controller = null;
+
+    function showTab(name) {
+      clearAll()
+      document.querySelectorAll('.tab').forEach(div => div.classList.remove('active'));
+      document.getElementById(name).classList.add('active');
+    }
+
+    function setLoading(isLoading) {
+      const loader = document.getElementById("loader");
+      loader.style.display = isLoading ? "block" : "none";
+      // document.getElementById("cancel-button").disabled = !isLoading;
+      document.getElementById("yt-button").disabled = isLoading;
+      document.getElementById("file-button").disabled = isLoading;
+      if (isLoading) {
+        document.getElementById("status").innerText = "⏳ 자막 추출 중...";
+      }
+    }
+
+    function cancelRequest() {
+      if (controller) {
+        controller.abort(); // 요청 중이면 요청 중단
+        controller = null;
+        document.getElementById("status").innerText = "🚫 요청이 취소되었습니다.";
+        clearText();
+      } else {
+        document.getElementById("status").innerText = "🔄 새로고침합니다.";
+        clearAll();
+        location.reload();
+      }
+    }
+
+    function resetPage(message) {
+      document.getElementById("status").innerText = message;
+      document.getElementById("yt-url").value = "";
+      document.getElementById("lang").value = "ko";
+      document.getElementById("quality").value = "low";
+      document.getElementById("output").value = "";
+      fullText = "";
+    }
+
+    async function extractYouTube() {
+      const url = document.getElementById("yt-url").value;
+      const quality = document.getElementById("quality").value;
+      const lang = document.getElementById("lang").value;
+      if (!url.includes("watch?v=") && !url.includes("shorts/")) {
+        alert("⚠️ 유효한 유튜브 영상 URL을 입력해주세요.");
+        return;
+      }
+      document.getElementById("output").value = "";
+      controller = new AbortController();
+      const signal = controller.signal;
+      setLoading(true);
+      const startTime = Date.now();
+
+      try {
+        const res = await fetch(`http://127.0.0.1:8000/transcribe_youtube`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, quality, lang }),
+          signal
+        });
+        const data = await res.json();
+        fullText = data.transcription || data.error || "❌ 오류 발생";
+        document.getElementById("output").value = fullText.length > 10000 ? fullText.slice(0, 10000) + "\n... 이후 생략됨" : fullText;
+        const endTime = Date.now();
+        document.getElementById("status").innerText = `✅ 처리 완료 (${((endTime - startTime) / 1000).toFixed(1)}초)`;
+        controller = null;
+      } catch (e) {
+        if (e.name === 'AbortError') {
+          console.log("요청이 취소됨.");
+        } else {
+          resetPage("❌ 서버 오류 발생");
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    function clearAll() {
+      // 입력창 초기화
+      document.getElementById("yt-url").value = "";
+      document.getElementById("audio-file").value = "";
+
+      // 출력창 초기화
+      document.getElementById("output").value = "";
+
+      // 상태 메시지 초기화
+      document.getElementById("status").innerText = "";
+
+      // 내부 저장된 전체 텍스트도 초기화
+      fullText = "";
+
+      // 컨트롤러 초기화
+      controller = null;
+    }
+
+    function clearText() {
+      fullText = "";
+      document.getElementById("output").value = "";
+    }
+    async function extractFile() {
+      const file = document.getElementById("audio-file").files[0];
+      if (!file) {
+        alert("⚠️ 오디오 파일을 선택해주세요");
+        return;
+      }
+
+      controller = new AbortController();
+      const signal = controller.signal;
+      setLoading(true);
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("http://127.0.0.1:8000/transcribe_file", {
+          method: "POST",
+          body: formData,
+          signal
+        });
+        const data = await res.json();
+        fullText = data.transcription || data.error || "❌ 오류 발생";
+        document.getElementById("output").value = fullText.length > 10000 ? fullText.slice(0, 10000) + "\n... 이후 생략됨" : fullText;
+        document.getElementById("status").innerText = `✅ 처리 완료`;
+      } catch (e) {
+        if (e.name === 'AbortError') {
+          console.log("요청이 취소됨.");
+        } else {
+          resetPage("❌ 서버 오류 발생");
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function copyText() {
+      if (!fullText.trim()) {
+        alert("⚠️ 복사할 내용이 없습니다.");
+        return;
+      }
+      navigator.clipboard.writeText(fullText);
+      alert("✅ 전체 자막 복사 완료!");
+    }
+
+    function downloadText() {
+      if (!fullText.trim()) {
+        alert("⚠️ 다운로드할 텍스트가 없습니다.");
+        return;
+      }
+      const blob = new Blob([fullText], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "subtitle.txt";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadFromServer() {
+      const url = document.getElementById("yt-url").value;
+      const format = document.getElementById("format").value;
+      if (!url.includes("watch?v=") && !url.includes("shorts/")) {
+        alert("⚠️ 유효한 유튜브 영상 URL을 입력해주세요");
+        return;
+      }
+      fetch(`http://127.0.0.1:8000/download?url=${encodeURIComponent(url)}&format=${format}`)
+        .then(res => res.blob())
+        .then(blob => {
+          const blobUrl = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = blobUrl;
+          a.download = `subtitle.${format}`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(blobUrl);
+        });
+    }
+  </script>
+</body>
+</html>
